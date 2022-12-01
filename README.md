@@ -1,6 +1,12 @@
 # Favorites Macro
-This Webex Device macro automatically creates favourites for meeting room devices in your Webex Org
 
+This Webex Device macro automatically creates favourites for meeting room devices in your Webex Org based off Control Hub Tags
+
+## How it works
+
+The macro uses a Webex Bot token to search for any Webex Devices which have tagged in your Webex Org. You can configured multiple tags in the macros configuration and any device found with that matching tag will have its contact info added to a local phonebook folder with the same name of the tag. That way you could create create a tag call 'sales' and tag all the devices in your Webex Org with it and have a folder called sales with all the sales devices.
+
+![ezgif com-gif-maker (2)](https://user-images.githubusercontent.com/21026209/205152597-9fe570ca-d0ec-4153-b20e-73bf62eb65bf.gif)
 
 ## Requirements
 
