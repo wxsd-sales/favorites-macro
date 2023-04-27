@@ -64,14 +64,14 @@ async function main() {
   }
 
   // Retrieve any stored token
-  const storedoauth = await xapi.Config.FacilityService.Service[5].Number.get();
-  if (storedoauth != '') {
-    try{
-      oauth = JSON.parse(atob(storedoauth));
-      console.log('OAuth Token Restored')
-    } catch {
-      console.log('Error parsing stored OAuth Token')
-    }
+  const storedoauth = await retrieveToken()
+  .catch(err => console.log('Unable to get stored oauth'));
+
+  if (storedoauth == null) {
+    console.log('Error parsing stored OAuth Token');
+  } else {
+    oauth = storedoauth;
+    console.log('OAuth Token Restored');
   }
 
   updateFavorites(config.favTags);
@@ -208,12 +208,7 @@ function getAccessToken() {
       const body = JSON.parse(result.Body);
       oauth.accessToken = body.access_token;
       oauth.expiresDate = new Date(Date.now().valueOf() + (body.expires_in * 1000)).valueOf();
-
-      console.log(JSON.stringify(oauth));
-      xapi.Config.FacilityService.Service[5].Number.set(btoa(JSON.stringify(oauth)))
-      .then(result => console.log('New Access Token Stored'))
-      .catch(err => conole.log('Error storing new Access Token: ' + err))
-
+      saveToken(oauth)
       console.log(`New Access Token Obtained - expires in [${body.expires_in}] seconds at [${oauth.expiresDate}]`);
       return
     })
@@ -222,6 +217,37 @@ function getAccessToken() {
         console.log(`Error getting access token - StatusCode [${err.data.StatusCode}] - Message [${err.message}]`)
       } else {
         console.log(`Error getting access token - Message [${err.message}]`)
+      }
+    })
+}
+
+function saveToken(token) {
+  const panel = `
+    <Extensions>
+      <Panel>
+        <Order>99</Order>
+        <Location>Hidden</Location>
+        <Name>accessToken</Name>
+        <CustomIcon>
+        <Id>${btoa(JSON.stringify(token))}</Id>
+        </CustomIcon>
+      </Panel>
+    </Extensions>`;
+  xapi.Command.UserInterface.Extensions.Panel.Save(
+    { PanelId: 'accessToken' }, panel);
+}
+
+function retrieveToken() {
+  return xapi.Command.UserInterface.Extensions.List({ ActivityType: 'Custom' })
+    .then(result => {
+      const panels = result.Extensions.Panel;
+      if (panels.length == 0) return null;
+      const accessPanel = panels.find(panel => panel.PanelId == 'accessToken')
+      if (accessPanel.length == 0) return null;
+      try {
+        return JSON.parse(atob(accessPanel.CustomIcon.Id));
+      } catch (error) {
+        return null;
       }
     })
 }
