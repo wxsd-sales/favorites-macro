@@ -9,16 +9,17 @@
  * Released: 27/04/22
  * 
  * This Webex Device macro automatically adds local phonebook
- * favourites to your device based of Devices on your Webex
- * Org which have been approperately tagged on Control Hub. 
+ * favorites to your device based by looking up Devices on 
+ * your Webex Org which have been approperately tagged on 
+ * Control Hub. 
  * 
  * The Devices list is obtained via this Webex API request:
  * https://developer.webex.com/docs/api/v1/devices/list-devices
  * 
- * Therefore, a Service App Integration is required with the 
+ * Therefore, a Service App Integration is required with a 
  * 'spark-admin:devices_read' access scope. Refer to this guide
  * to setup a Service App on your Webex App and add the OAuth
- * details to the macro config below: 
+ * details to the macros config below: 
  * https://developer.webex.com/docs/service-app
  * 
  * Full Readme, source code and license details available on Github:
@@ -54,13 +55,24 @@ let oauth = {
   expiresDate: null
 };
 
-function main() {
+async function main() {
   xapi.Config.HttpClient.Mode.set('On');
 
   if (config.favTags.length < 1) {
     console.log('No favorite tags provided - stopping macro')
     return
-  } 
+  }
+
+  // Retrieve any stored token
+  const storedoauth = await xapi.Config.FacilityService.Service[5].Number.get();
+  if (storedoauth != '') {
+    try{
+      oauth = JSON.parse(atob(storedoauth));
+      console.log('OAuth Token Restored')
+    } catch {
+      console.log('Error parsing stored OAuth Token')
+    }
+  }
 
   updateFavorites(config.favTags);
   setInterval(updateFavorites, config.refreshPeriod * 1000, config.favTags);
@@ -78,10 +90,10 @@ async function updateFavorites(favTags) {
     await getAccessToken();
   }
 
-  const hour = 60*60*1000;
-  const date = new Date(Date.now().valueOf()+hour);
+  const hour = 60 * 60 * 1000;
+  const date = new Date(Date.now().valueOf() + hour);
 
-  if (oauth.expiresDate <= date) {
+  if (oauth.expiresDate <= date.valueOf()) {
     console.log('Access Token Expired - Generating new one')
     await getAccessToken();
   } else {
@@ -150,10 +162,16 @@ function getDeviceList(token, tag) {
       return isolateData(items);
     })
     .catch(err => {
-      console.log(`Unable to get device list - StatusCode [${err.data.StatusCode}] - Message [${err.message}]`);
-      if (err.data.StatusCode == '401') {
-        console.log('Access Token may be expired, attempting to refresh')
-        // TODO: Recover from expired token
+      console.log(err)
+
+      if (err.hasOwnProperty('StatusCode')) {
+        console.log(`Error getting device list for tag [${tag}] - StatusCode [${err.data.StatusCode}] - Message [${err.message}]`);
+        if (err.data.StatusCode == '401') {
+          console.log('Access Token may be expired, attempting to refresh')
+          // TODO: Recover from expired token
+        }
+      } else {
+        console.log(`Error getting device list for tag [${tag}] - Message [${err.message}]`);
       }
 
     })
@@ -188,12 +206,22 @@ function getAccessToken() {
   )
     .then(result => {
       const body = JSON.parse(result.Body);
-      const date = new Date();
       oauth.accessToken = body.access_token;
-      oauth.expiresDate = new Date(Date.now().valueOf() + (body.expires_in * 1000));
-      //oauth.expiresDate = new Date(date.valueOf() + (body.expires_in * 1000));
+      oauth.expiresDate = new Date(Date.now().valueOf() + (body.expires_in * 1000)).valueOf();
+
+      console.log(JSON.stringify(oauth));
+      xapi.Config.FacilityService.Service[5].Number.set(btoa(JSON.stringify(oauth)))
+      .then(result => console.log('New Access Token Stored'))
+      .catch(err => conole.log('Error storing new Access Token: ' + err))
+
       console.log(`New Access Token Obtained - expires in [${body.expires_in}] seconds at [${oauth.expiresDate}]`);
       return
     })
-    .catch(err => console.log(`Error getting access token - StatusCode [${err.data.StatusCode}] - Message [${err.message}]`))
+    .catch(err => {
+      if (err.hasOwnProperty('StatusCode')) {
+        console.log(`Error getting access token - StatusCode [${err.data.StatusCode}] - Message [${err.message}]`)
+      } else {
+        console.log(`Error getting access token - Message [${err.message}]`)
+      }
+    })
 }
