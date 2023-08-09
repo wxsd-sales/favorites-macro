@@ -23,7 +23,7 @@ This macro has two versions which have different dependencies:
 
 - For the Service App version you will need a Service App which has been given the ``spark-admin:devices_read`` access scope on your Webex Org
 - Once created, you will need a copy of the Service Apps Client Id, Client Secret and Refresh Token for the macros configuration
-  - More information available here: https://developer.webex.com/docs/service-app
+  - More information available here: https://developer.webex.com/docs/service-apps
 
 #### Common Dependencies
 
