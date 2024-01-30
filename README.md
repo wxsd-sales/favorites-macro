@@ -35,7 +35,7 @@ This macro has two versions which have different dependencies:
 
 1. Download the ``favorites-macro-bot.js`` or ``favorites-macro-oauth.js`` file and upload it to your Webex Room devices Macro editor via the web interface.
 2. Configure the macro by changing the initial values, there are comments explaining each one.
-    - For the ``favorites-macro-bot.js`` (Webex Bot) macro, add your Webex Bots Access Token to the ``botToken``` section in the configuration.
+    - For the ``favorites-macro-bot.js`` (Webex Bot) macro, add your Webex Bots Access Token to the ``botToken`` section in the configuration.
     - For the ``favorites-macro-oauth.js`` (Webex Service App) macro, add your Webex Service Apps Client Id, Client Secret and Refresh Token to the oauth section of the macros configuration
 3. Save the macro changes and enable it using the toggle in the Macro on the editor.
 
